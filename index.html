@@ -1,0 +1,714 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>lineshopper - Compare Sportsbook Odds</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --color-primary: #007AFF;
+            --color-success: #34C759;
+            --color-background: #F5F5F7;
+            --color-surface: #FFFFFF;
+            --color-text: #1D1D1F;
+            --color-text-secondary: #86868B;
+            --color-border: #D2D2D7;
+            --color-hover: #F5F5F7;
+            --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.04);
+            --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.07);
+            --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'SF Pro Display', 'Segoe UI', sans-serif;
+            background: var(--color-background);
+            color: var(--color-text);
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 24px;
+        }
+
+        /* Header */
+        header {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: saturate(180%) blur(20px);
+            -webkit-backdrop-filter: saturate(180%) blur(20px);
+            border-bottom: 1px solid var(--color-border);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            padding: 16px 0;
+        }
+
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 22px;
+            font-weight: 600;
+            color: var(--color-text);
+            letter-spacing: -0.5px;
+        }
+
+        .tagline {
+            font-size: 14px;
+            color: var(--color-text-secondary);
+            margin-top: 2px;
+        }
+
+        /* Controls */
+        .controls {
+            padding: 32px 0 24px;
+        }
+
+        .filters {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        select {
+            padding: 10px 36px 10px 14px;
+            border: 1px solid var(--color-border);
+            border-radius: 10px;
+            background: var(--color-surface);
+            color: var(--color-text);
+            font-size: 15px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1.5L6 6.5L11 1.5' stroke='%2386868B' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 14px center;
+        }
+
+        select:hover {
+            border-color: var(--color-primary);
+            background-color: var(--color-hover);
+        }
+
+        select:focus {
+            outline: none;
+            border-color: var(--color-primary);
+            box-shadow: 0 0 0 4px rgba(0, 122, 255, 0.1);
+        }
+
+        /* Games Grid */
+        .games-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            padding-bottom: 48px;
+        }
+
+        .game-card {
+            background: var(--color-surface);
+            border-radius: 16px;
+            box-shadow: var(--shadow-sm);
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .game-card:hover {
+            box-shadow: var(--shadow-lg);
+            transform: translateY(-2px);
+        }
+
+        .game-header {
+            padding: 20px 24px;
+            border-bottom: 1px solid var(--color-border);
+        }
+
+        .game-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .sport-badge {
+            display: inline-block;
+            padding: 4px 10px;
+            background: var(--color-hover);
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--color-text-secondary);
+            letter-spacing: 0.3px;
+            text-transform: uppercase;
+        }
+
+        .game-time {
+            font-size: 14px;
+            color: var(--color-text-secondary);
+            font-weight: 500;
+        }
+
+        .matchup {
+            font-size: 20px;
+            font-weight: 600;
+            color: var(--color-text);
+            letter-spacing: -0.3px;
+        }
+
+        .vs {
+            color: var(--color-text-secondary);
+            font-weight: 500;
+            margin: 0 8px;
+        }
+
+        /* Odds Table */
+        .odds-table-container {
+            overflow-x: auto;
+        }
+
+        .odds-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+        }
+
+        .odds-table thead {
+            background: var(--color-hover);
+        }
+
+        .odds-table th {
+            padding: 14px 20px;
+            text-align: left;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--color-text-secondary);
+            border-bottom: 1px solid var(--color-border);
+        }
+
+        .odds-table th:first-child {
+            padding-left: 24px;
+        }
+
+        .odds-table th:last-child {
+            padding-right: 24px;
+        }
+
+        .odds-table td {
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--color-border);
+            font-size: 15px;
+        }
+
+        .odds-table td:first-child {
+            padding-left: 24px;
+        }
+
+        .odds-table td:last-child {
+            padding-right: 24px;
+        }
+
+        .odds-table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        .odds-table tbody tr {
+            transition: background-color 0.2s ease;
+        }
+
+        .odds-table tbody tr:hover {
+            background: var(--color-hover);
+        }
+
+        .sportsbook-name {
+            font-weight: 600;
+            color: var(--color-text);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .book-logo {
+            width: 28px;
+            height: 28px;
+            border-radius: 7px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            font-weight: 700;
+            color: white;
+        }
+
+        .odds-value {
+            font-weight: 600;
+            color: var(--color-text);
+            font-variant-numeric: tabular-nums;
+        }
+
+        .best-odds {
+            color: var(--color-success);
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .best-odds::before {
+            content: '✓';
+            font-size: 16px;
+        }
+
+        .bet-button {
+            padding: 8px 20px;
+            background: var(--color-primary);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+        }
+
+        .bet-button:hover {
+            background: #0051D5;
+            transform: scale(1.02);
+        }
+
+        .bet-button:active {
+            transform: scale(0.98);
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 80px 20px;
+            color: var(--color-text-secondary);
+        }
+
+        .empty-state-icon {
+            font-size: 64px;
+            margin-bottom: 16px;
+            opacity: 0.3;
+        }
+
+        .empty-state-text {
+            font-size: 18px;
+            font-weight: 500;
+        }
+
+        /* Footer */
+        footer {
+            border-top: 1px solid var(--color-border);
+            padding: 32px 0;
+            margin-top: 48px;
+        }
+
+        .footer-content {
+            text-align: center;
+            color: var(--color-text-secondary);
+            font-size: 13px;
+            line-height: 1.8;
+        }
+
+        .disclaimer {
+            max-width: 700px;
+            margin: 0 auto 16px;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .matchup {
+                font-size: 17px;
+            }
+
+            .odds-table th,
+            .odds-table td {
+                padding: 12px 12px;
+                font-size: 14px;
+            }
+
+            .odds-table th:first-child,
+            .odds-table td:first-child {
+                padding-left: 16px;
+            }
+
+            .odds-table th:last-child,
+            .odds-table td:last-child {
+                padding-right: 16px;
+            }
+
+            .filters {
+                flex-direction: column;
+            }
+
+            select {
+                width: 100%;
+            }
+        }
+
+        /* Loading Animation */
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .game-card {
+            animation: fadeIn 0.4s ease-out;
+        }
+
+        .game-card:nth-child(1) { animation-delay: 0s; }
+        .game-card:nth-child(2) { animation-delay: 0.1s; }
+        .game-card:nth-child(3) { animation-delay: 0.2s; }
+        .game-card:nth-child(4) { animation-delay: 0.3s; }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <div class="header-content">
+                <div>
+                    <div class="logo">lineshopper</div>
+                    <div class="tagline">Compare odds across all sportsbooks</div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="controls">
+            <div class="filters">
+                <select id="sportFilter">
+                    <option value="all">All Sports</option>
+                    <option value="nfl">NFL</option>
+                    <option value="nba">NBA</option>
+                    <option value="mlb">MLB</option>
+                    <option value="nhl">NHL</option>
+                </select>
+                <select id="betTypeFilter">
+                    <option value="spread">Spread</option>
+                    <option value="moneyline">Moneyline</option>
+                    <option value="total">Total (O/U)</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="games-grid" id="gamesGrid">
+            <!-- Games will be inserted here -->
+        </div>
+    </div>
+
+    <footer>
+        <div class="container">
+            <div class="footer-content">
+                <div class="disclaimer">
+                    lineshop<parameter name="new_str">                    lineshopper is an odds comparison service. We don't facilitate betting directly. 
+                    Please bet responsibly and only where legal. 18+ only. 
+                    Gambling problem? Call 1-800-GAMBLER.
+                </div>
+                <div>© 2024 lineshopper</div>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Mock data
+        const mockGames = [
+            {
+                id: 1,
+                sport: 'NFL',
+                team1: 'Kansas City Chiefs',
+                team2: 'Buffalo Bills',
+                time: 'Sun, Dec 29 • 4:25 PM ET',
+                odds: {
+                    spread: [
+                        { book: 'DraftKings', team1Line: '-2.5', team1Odds: '-110', team2Line: '+2.5', team2Odds: '-110' },
+                        { book: 'FanDuel', team1Line: '-3.0', team1Odds: '-108', team2Line: '+3.0', team2Odds: '-112' },
+                        { book: 'BetMGM', team1Line: '-2.5', team1Odds: '-115', team2Line: '+2.5', team2Odds: '-105' },
+                        { book: 'Caesars', team1Line: '-3.0', team1Odds: '-110', team2Line: '+3.0', team2Odds: '-110' },
+                        { book: 'BetRivers', team1Line: '-2.5', team1Odds: '-112', team2Line: '+2.5', team2Odds: '-108' },
+                    ],
+                    moneyline: [
+                        { book: 'DraftKings', team1Odds: '-165', team2Odds: '+140' },
+                        { book: 'FanDuel', team1Odds: '-170', team2Odds: '+142' },
+                        { book: 'BetMGM', team1Odds: '-168', team2Odds: '+145' },
+                        { book: 'Caesars', team1Odds: '-162', team2Odds: '+138' },
+                        { book: 'BetRivers', team1Odds: '-165', team2Odds: '+140' },
+                    ],
+                    total: [
+                        { book: 'DraftKings', line: '48.5', overOdds: '-110', underOdds: '-110' },
+                        { book: 'FanDuel', line: '48.5', overOdds: '-108', underOdds: '-112' },
+                        { book: 'BetMGM', line: '48.0', overOdds: '+100', underOdds: '-120' },
+                        { book: 'Caesars', line: '48.5', overOdds: '-110', underOdds: '-110' },
+                        { book: 'BetRivers', line: '48.5', overOdds: '-112', underOdds: '-108' },
+                    ]
+                }
+            },
+            {
+                id: 2,
+                sport: 'NBA',
+                team1: 'Los Angeles Lakers',
+                team2: 'Golden State Warriors',
+                time: 'Tonight • 10:00 PM ET',
+                odds: {
+                    spread: [
+                        { book: 'DraftKings', team1Line: '+4.5', team1Odds: '-110', team2Line: '-4.5', team2Odds: '-110' },
+                        { book: 'FanDuel', team1Line: '+4.0', team1Odds: '-112', team2Line: '-4.0', team2Odds: '-108' },
+                        { book: 'BetMGM', team1Line: '+4.5', team1Odds: '-108', team2Line: '-4.5', team2Odds: '-112' },
+                        { book: 'Caesars', team1Line: '+4.5', team1Odds: '-110', team2Line: '-4.5', team2Odds: '-110' },
+                        { book: 'BetRivers', team1Line: '+4.5', team1Odds: '-110', team2Line: '-4.5', team2Odds: '-110' },
+                    ],
+                    moneyline: [
+                        { book: 'DraftKings', team1Odds: '+145', team2Odds: '-165' },
+                        { book: 'FanDuel', team1Odds: '+150', team2Odds: '-170' },
+                        { book: 'BetMGM', team1Odds: '+148', team2Odds: '-168' },
+                        { book: 'Caesars', team1Odds: '+142', team2Odds: '-162' },
+                        { book: 'BetRivers', team1Odds: '+155', team2Odds: '-175' },
+                    ],
+                    total: [
+                        { book: 'DraftKings', line: '228.5', overOdds: '-110', underOdds: '-110' },
+                        { book: 'FanDuel', line: '228.5', overOdds: '-112', underOdds: '-108' },
+                        { book: 'BetMGM', line: '228.0', overOdds: '-105', underOdds: '-115' },
+                        { book: 'Caesars', line: '228.5', overOdds: '-110', underOdds: '-110' },
+                        { book: 'BetRivers', line: '228.5', overOdds: '-108', underOdds: '-112' },
+                    ]
+                }
+            },
+            {
+                id: 3,
+                sport: 'NHL',
+                team1: 'Toronto Maple Leafs',
+                team2: 'Boston Bruins',
+                time: 'Tonight • 7:00 PM ET',
+                odds: {
+                    spread: [
+                        { book: 'DraftKings', team1Line: '+1.5', team1Odds: '-200', team2Line: '-1.5', team2Odds: '+165' },
+                        { book: 'FanDuel', team1Line: '+1.5', team1Odds: '-205', team2Line: '-1.5', team2Odds: '+168' },
+                        { book: 'BetMGM', team1Line: '+1.5', team1Odds: '-198', team2Line: '-1.5', team2Odds: '+162' },
+                        { book: 'Caesars', team1Line: '+1.5', team1Odds: '-200', team2Line: '-1.5', team2Odds: '+165' },
+                        { book: 'BetRivers', team1Line: '+1.5', team1Odds: '-202', team2Line: '-1.5', team2Odds: '+166' },
+                    ],
+                    moneyline: [
+                        { book: 'DraftKings', team1Odds: '+125', team2Odds: '-145' },
+                        { book: 'FanDuel', team1Odds: '+128', team2Odds: '-148' },
+                        { book: 'BetMGM', team1Odds: '+130', team2Odds: '-150' },
+                        { book: 'Caesars', team1Odds: '+122', team2Odds: '-142' },
+                        { book: 'BetRivers', team1Odds: '+125', team2Odds: '-145' },
+                    ],
+                    total: [
+                        { book: 'DraftKings', line: '6.5', overOdds: '-105', underOdds: '-115' },
+                        { book: 'FanDuel', line: '6.5', overOdds: '-110', underOdds: '-110' },
+                        { book: 'BetMGM', line: '6.0', overOdds: '+105', underOdds: '-125' },
+                        { book: 'Caesars', line: '6.5', overOdds: '-108', underOdds: '-112' },
+                        { book: 'BetRivers', line: '6.5', overOdds: '-112', underOdds: '-108' },
+                    ]
+                }
+            }
+        ];
+
+        let currentBetType = 'spread';
+
+        // Find best odds
+        function findBestOdds(odds, key) {
+            let bestValue = -Infinity;
+            let bestIndex = -1;
+
+            odds.forEach((odd, index) => {
+                const value = parseInt(odd[key]);
+                if (value > bestValue) {
+                    bestValue = value;
+                    bestIndex = index;
+                }
+            });
+
+            return bestIndex;
+        }
+
+        // Render games
+        function renderGames() {
+            const grid = document.getElementById('gamesGrid');
+            grid.innerHTML = '';
+
+            mockGames.forEach(game => {
+                const gameCard = document.createElement('div');
+                gameCard.className = 'game-card';
+
+                const oddsData = game.odds[currentBetType];
+                
+                let tableHeaders = '';
+                let tableRows = '';
+
+                if (currentBetType === 'spread') {
+                    const bestTeam1 = findBestOdds(oddsData, 'team1Odds');
+                    const bestTeam2 = findBestOdds(oddsData, 'team2Odds');
+
+                    tableHeaders = `
+                        <th>Sportsbook</th>
+                        <th>${game.team1}</th>
+                        <th>${game.team2}</th>
+                        <th></th>
+                    `;
+
+                    tableRows = oddsData.map((odd, idx) => `
+                        <tr>
+                            <td>
+                                <div class="sportsbook-name">
+                                    <div class="book-logo">${odd.book.substring(0, 2).toUpperCase()}</div>
+                                    ${odd.book}
+                                </div>
+                            </td>
+                            <td>
+                                <span class="odds-value ${idx === bestTeam1 ? 'best-odds' : ''}">
+                                    ${odd.team1Line} (${odd.team1Odds})
+                                </span>
+                            </td>
+                            <td>
+                                <span class="odds-value ${idx === bestTeam2 ? 'best-odds' : ''}">
+                                    ${odd.team2Line} (${odd.team2Odds})
+                                </span>
+                            </td>
+                            <td>
+                                <button class="bet-button" onclick="handleBetClick('${odd.book}')">Bet Now</button>
+                            </td>
+                        </tr>
+                    `).join('');
+                } else if (currentBetType === 'moneyline') {
+                    const bestTeam1 = findBestOdds(oddsData, 'team1Odds');
+                    const bestTeam2 = findBestOdds(oddsData, 'team2Odds');
+
+                    tableHeaders = `
+                        <th>Sportsbook</th>
+                        <th>${game.team1}</th>
+                        <th>${game.team2}</th>
+                        <th></th>
+                    `;
+
+                    tableRows = oddsData.map((odd, idx) => `
+                        <tr>
+                            <td>
+                                <div class="sportsbook-name">
+                                    <div class="book-logo">${odd.book.substring(0, 2).toUpperCase()}</div>
+                                    ${odd.book}
+                                </div>
+                            </td>
+                            <td>
+                                <span class="odds-value ${idx === bestTeam1 ? 'best-odds' : ''}">
+                                    ${odd.team1Odds}
+                                </span>
+                            </td>
+                            <td>
+                                <span class="odds-value ${idx === bestTeam2 ? 'best-odds' : ''}">
+                                    ${odd.team2Odds}
+                                </span>
+                            </td>
+                            <td>
+                                <button class="bet-button" onclick="handleBetClick('${odd.book}')">Bet Now</button>
+                            </td>
+                        </tr>
+                    `).join('');
+                } else if (currentBetType === 'total') {
+                    const bestOver = findBestOdds(oddsData, 'overOdds');
+                    const bestUnder = findBestOdds(oddsData, 'underOdds');
+
+                    tableHeaders = `
+                        <th>Sportsbook</th>
+                        <th>Over</th>
+                        <th>Under</th>
+                        <th></th>
+                    `;
+
+                    tableRows = oddsData.map((odd, idx) => `
+                        <tr>
+                            <td>
+                                <div class="sportsbook-name">
+                                    <div class="book-logo">${odd.book.substring(0, 2).toUpperCase()}</div>
+                                    ${odd.book}
+                                </div>
+                            </td>
+                            <td>
+                                <span class="odds-value ${idx === bestOver ? 'best-odds' : ''}">
+                                    O ${odd.line} (${odd.overOdds})
+                                </span>
+                            </td>
+                            <td>
+                                <span class="odds-value ${idx === bestUnder ? 'best-odds' : ''}">
+                                    U ${odd.line} (${odd.underOdds})
+                                </span>
+                            </td>
+                            <td>
+                                <button class="bet-button" onclick="handleBetClick('${odd.book}')">Bet Now</button>
+                            </td>
+                        </tr>
+                    `).join('');
+                }
+
+                gameCard.innerHTML = `
+                    <div class="game-header">
+                        <div class="game-meta">
+                            <span class="sport-badge">${game.sport}</span>
+                            <span class="game-time">${game.time}</span>
+                        </div>
+                        <div class="matchup">
+                            ${game.team1} <span class="vs">vs</span> ${game.team2}
+                        </div>
+                    </div>
+                    <div class="odds-table-container">
+                        <table class="odds-table">
+                            <thead>
+                                <tr>${tableHeaders}</tr>
+                            </thead>
+                            <tbody>
+                                ${tableRows}
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+
+                grid.appendChild(gameCard);
+            });
+        }
+
+        // Handle bet click
+        function handleBetClick(sportsbook) {
+            alert(`Redirecting to ${sportsbook} with your affiliate link!\n\nIn production, this would:\n• Deep link to their app/site\n• Track the click for affiliate commission\n• Pre-populate bet details if possible`);
+        }
+
+        // Filter handlers
+        document.getElementById('betTypeFilter').addEventListener('change', function(e) {
+            currentBetType = e.target.value;
+            renderGames();
+        });
+
+        document.getElementById('sportFilter').addEventListener('change', function(e) {
+            // In production, would filter games by sport
+            console.log('Filter by sport:', e.target.value);
+        });
+
+        // Initialize
+        renderGames();
+    </script>
+</body>
+</html>
