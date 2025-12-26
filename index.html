@@ -1,0 +1,807 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>lineshopper - Compare Sportsbook Odds</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --color-primary: #007AFF;
+            --color-success: #34C759;
+            --color-background: #F5F5F7;
+            --color-surface: #FFFFFF;
+            --color-text: #1D1D1F;
+            --color-text-secondary: #86868B;
+            --color-border: #D2D2D7;
+            --color-hover: #F5F5F7;
+            --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.04);
+            --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.07);
+            --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'SF Pro Display', 'Segoe UI', sans-serif;
+            background: var(--color-background);
+            color: var(--color-text);
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 24px;
+        }
+
+        /* Header */
+        header {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: saturate(180%) blur(20px);
+            -webkit-backdrop-filter: saturate(180%) blur(20px);
+            border-bottom: 1px solid var(--color-border);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            padding: 16px 0;
+        }
+
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 22px;
+            font-weight: 600;
+            color: var(--color-text);
+            letter-spacing: -0.5px;
+        }
+
+        .tagline {
+            font-size: 14px;
+            color: var(--color-text-secondary);
+            margin-top: 2px;
+        }
+
+        .live-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            color: var(--color-success);
+            font-weight: 600;
+        }
+
+        .live-dot {
+            width: 8px;
+            height: 8px;
+            background: var(--color-success);
+            border-radius: 50%;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
+
+        /* Controls */
+        .controls {
+            padding: 32px 0 24px;
+        }
+
+        .filters {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        select {
+            padding: 10px 36px 10px 14px;
+            border: 1px solid var(--color-border);
+            border-radius: 10px;
+            background: var(--color-surface);
+            color: var(--color-text);
+            font-size: 15px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1.5L6 6.5L11 1.5' stroke='%2386868B' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 14px center;
+        }
+
+        select:hover {
+            border-color: var(--color-primary);
+            background-color: var(--color-hover);
+        }
+
+        select:focus {
+            outline: none;
+            border-color: var(--color-primary);
+            box-shadow: 0 0 0 4px rgba(0, 122, 255, 0.1);
+        }
+
+        /* Loading State */
+        .loading {
+            text-align: center;
+            padding: 80px 20px;
+            color: var(--color-text-secondary);
+        }
+
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid var(--color-border);
+            border-top-color: var(--color-primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 16px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Error State */
+        .error {
+            background: #FFF3F3;
+            border: 1px solid #FFD6D6;
+            border-radius: 12px;
+            padding: 20px;
+            margin: 20px 0;
+            color: #D32F2F;
+        }
+
+        /* Games Grid */
+        .games-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            padding-bottom: 48px;
+        }
+
+        .game-card {
+            background: var(--color-surface);
+            border-radius: 16px;
+            box-shadow: var(--shadow-sm);
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .game-card:hover {
+            box-shadow: var(--shadow-lg);
+            transform: translateY(-2px);
+        }
+
+        .game-header {
+            padding: 20px 24px;
+            border-bottom: 1px solid var(--color-border);
+        }
+
+        .game-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .sport-badge {
+            display: inline-block;
+            padding: 4px 10px;
+            background: var(--color-hover);
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--color-text-secondary);
+            letter-spacing: 0.3px;
+            text-transform: uppercase;
+        }
+
+        .game-time {
+            font-size: 14px;
+            color: var(--color-text-secondary);
+            font-weight: 500;
+        }
+
+        .matchup {
+            font-size: 20px;
+            font-weight: 600;
+            color: var(--color-text);
+            letter-spacing: -0.3px;
+        }
+
+        .vs {
+            color: var(--color-text-secondary);
+            font-weight: 500;
+            margin: 0 8px;
+        }
+
+        /* Odds Table */
+        .odds-table-container {
+            overflow-x: auto;
+        }
+
+        .odds-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+        }
+
+        .odds-table thead {
+            background: var(--color-hover);
+        }
+
+        .odds-table th {
+            padding: 14px 20px;
+            text-align: left;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--color-text-secondary);
+            border-bottom: 1px solid var(--color-border);
+        }
+
+        .odds-table th:first-child {
+            padding-left: 24px;
+        }
+
+        .odds-table th:last-child {
+            padding-right: 24px;
+        }
+
+        .odds-table td {
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--color-border);
+            font-size: 15px;
+        }
+
+        .odds-table td:first-child {
+            padding-left: 24px;
+        }
+
+        .odds-table td:last-child {
+            padding-right: 24px;
+        }
+
+        .odds-table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        .odds-table tbody tr {
+            transition: background-color 0.2s ease;
+        }
+
+        .odds-table tbody tr:hover {
+            background: var(--color-hover);
+        }
+
+        .sportsbook-name {
+            font-weight: 600;
+            color: var(--color-text);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .book-logo {
+            width: 28px;
+            height: 28px;
+            border-radius: 7px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            font-weight: 700;
+            color: white;
+        }
+
+        .odds-value {
+            font-weight: 600;
+            color: var(--color-text);
+            font-variant-numeric: tabular-nums;
+        }
+
+        .best-odds {
+            color: var(--color-success);
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .best-odds::before {
+            content: '✓';
+            font-size: 16px;
+        }
+
+        .bet-button {
+            padding: 8px 20px;
+            background: var(--color-primary);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+        }
+
+        .bet-button:hover {
+            background: #0051D5;
+            transform: scale(1.02);
+        }
+
+        .bet-button:active {
+            transform: scale(0.98);
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 80px 20px;
+            color: var(--color-text-secondary);
+        }
+
+        .empty-state-icon {
+            font-size: 64px;
+            margin-bottom: 16px;
+            opacity: 0.3;
+        }
+
+        .empty-state-text {
+            font-size: 18px;
+            font-weight: 500;
+        }
+
+        /* Footer */
+        footer {
+            border-top: 1px solid var(--color-border);
+            padding: 32px 0;
+            margin-top: 48px;
+        }
+
+        .footer-content {
+            text-align: center;
+            color: var(--color-text-secondary);
+            font-size: 13px;
+            line-height: 1.8;
+        }
+
+        .disclaimer {
+            max-width: 700px;
+            margin: 0 auto 16px;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .matchup {
+                font-size: 17px;
+            }
+
+            .odds-table th,
+            .odds-table td {
+                padding: 12px 12px;
+                font-size: 14px;
+            }
+
+            .odds-table th:first-child,
+            .odds-table td:first-child {
+                padding-left: 16px;
+            }
+
+            .odds-table th:last-child,
+            .odds-table td:last-child {
+                padding-right: 16px;
+            }
+
+            .filters {
+                flex-direction: column;
+            }
+
+            select {
+                width: 100%;
+            }
+        }
+
+        /* Loading Animation */
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .game-card {
+            animation: fadeIn 0.4s ease-out;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <div class="header-content">
+                <div>
+                    <div class="logo">lineshopper</div>
+                    <div class="tagline">Compare odds across all sportsbooks</div>
+                </div>
+                <div class="live-indicator">
+                    <div class="live-dot"></div>
+                    <span>Live Odds</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="controls">
+            <div class="filters">
+                <select id="sportFilter">
+                    <option value="all">All Sports</option>
+                    <option value="NFL">NFL</option>
+                    <option value="NCAAFB">NCAAFB</option>
+                </select>
+                <select id="betTypeFilter">
+                    <option value="spreads">Spread</option>
+                    <option value="h2h">Moneyline</option>
+                    <option value="totals">Total (O/U)</option>
+                </select>
+            </div>
+        </div>
+
+        <div id="loadingState" class="loading">
+            <div class="loading-spinner"></div>
+            <div>Loading live odds...</div>
+        </div>
+
+        <div id="errorState" class="error" style="display: none;"></div>
+
+        <div class="games-grid" id="gamesGrid" style="display: none;"></div>
+    </div>
+
+    <footer>
+        <div class="container">
+            <div class="footer-content">
+                <div class="disclaimer">
+                    lineshopper is an odds comparison service. We don't facilitate betting directly. 
+                    Please bet responsibly and only where legal. 18+ only. 
+                    Gambling problem? Call 1-800-GAMBLER.
+                </div>
+                <div>© 2024 lineshopper</div>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        let allGames = [];
+        let currentSportFilter = 'all';
+        let currentBetType = 'spreads';
+
+        // Fetch odds from API
+        async function fetchOdds() {
+            try {
+                const response = await fetch('/api/odds');
+                const data = await response.json();
+                
+                if (!data.success) {
+                    throw new Error(data.error || 'Failed to fetch odds');
+                }
+                
+                allGames = data.games;
+                renderGames();
+                
+                // Hide loading, show games
+                document.getElementById('loadingState').style.display = 'none';
+                document.getElementById('gamesGrid').style.display = 'flex';
+                
+            } catch (error) {
+                console.error('Error fetching odds:', error);
+                document.getElementById('loadingState').style.display = 'none';
+                document.getElementById('errorState').style.display = 'block';
+                document.getElementById('errorState').textContent = 
+                    'Failed to load odds. Please refresh the page or try again later.';
+            }
+        }
+
+        // Format date/time
+        function formatGameTime(isoString) {
+            const date = new Date(isoString);
+            const now = new Date();
+            const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            const gameDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+            
+            const timeStr = date.toLocaleTimeString('en-US', { 
+                hour: 'numeric', 
+                minute: '2-digit',
+                hour12: true 
+            });
+            
+            if (gameDate.getTime() === today.getTime()) {
+                return `Today • ${timeStr}`;
+            } else if (gameDate.getTime() === today.getTime() + 86400000) {
+                return `Tomorrow • ${timeStr}`;
+            } else {
+                const dateStr = date.toLocaleDateString('en-US', { 
+                    weekday: 'short', 
+                    month: 'short', 
+                    day: 'numeric' 
+                });
+                return `${dateStr} • ${timeStr}`;
+            }
+        }
+
+        // Find best odds
+        function findBestOdds(bookmakers, marketKey, outcomeIndex) {
+            let bestValue = -Infinity;
+            let bestBookIndex = -1;
+
+            bookmakers.forEach((bookmaker, bookIdx) => {
+                const market = bookmaker.markets.find(m => m.key === marketKey);
+                if (market && market.outcomes[outcomeIndex]) {
+                    const value = market.outcomes[outcomeIndex].price;
+                    if (value > bestValue) {
+                        bestValue = value;
+                        bestBookIndex = bookIdx;
+                    }
+                }
+            });
+
+            return bestBookIndex;
+        }
+
+        // Get bookmaker display name
+        function getBookmakerName(key) {
+            const names = {
+                'draftkings': 'DraftKings',
+                'fanduel': 'FanDuel',
+                'betmgm': 'BetMGM',
+                'caesars': 'Caesars',
+                'betrivers': 'BetRivers',
+                'pointsbetus': 'PointsBet',
+                'wynnbet': 'WynnBet',
+                'unibet_us': 'Unibet',
+                'espnbet': 'ESPN BET',
+                'betus': 'BetUS'
+            };
+            return names[key] || key;
+        }
+
+        // Render games
+        function renderGames() {
+            const grid = document.getElementById('gamesGrid');
+            grid.innerHTML = '';
+
+            // Filter games
+            let filteredGames = allGames;
+            if (currentSportFilter !== 'all') {
+                filteredGames = allGames.filter(game => game.sport === currentSportFilter);
+            }
+
+            if (filteredGames.length === 0) {
+                grid.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">🏈</div>
+                        <div class="empty-state-text">No games available</div>
+                    </div>
+                `;
+                return;
+            }
+
+            filteredGames.forEach(game => {
+                const gameCard = document.createElement('div');
+                gameCard.className = 'game-card';
+
+                // Filter bookmakers that have the selected market
+                const booksWithMarket = game.bookmakers.filter(book => 
+                    book.markets.some(m => m.key === currentBetType)
+                );
+
+                if (booksWithMarket.length === 0) {
+                    return; // Skip games without this market
+                }
+
+                let tableHeaders = '';
+                let tableRows = '';
+
+                if (currentBetType === 'spreads') {
+                    const bestAway = findBestOdds(booksWithMarket, 'spreads', 0);
+                    const bestHome = findBestOdds(booksWithMarket, 'spreads', 1);
+
+                    tableHeaders = `
+                        <th>Sportsbook</th>
+                        <th>${game.awayTeam}</th>
+                        <th>${game.homeTeam}</th>
+                        <th></th>
+                    `;
+
+                    tableRows = booksWithMarket.map((book, idx) => {
+                        const market = book.markets.find(m => m.key === 'spreads');
+                        if (!market || !market.outcomes[0] || !market.outcomes[1]) return '';
+                        
+                        const awaySpread = market.outcomes[0].point;
+                        const awayOdds = market.outcomes[0].price;
+                        const homeSpread = market.outcomes[1].point;
+                        const homeOdds = market.outcomes[1].price;
+
+                        return `
+                            <tr>
+                                <td>
+                                    <div class="sportsbook-name">
+                                        <div class="book-logo">${getBookmakerName(book.key).substring(0, 2).toUpperCase()}</div>
+                                        ${getBookmakerName(book.key)}
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="odds-value ${idx === bestAway ? 'best-odds' : ''}">
+                                        ${awaySpread > 0 ? '+' : ''}${awaySpread} (${awayOdds > 0 ? '+' : ''}${awayOdds})
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="odds-value ${idx === bestHome ? 'best-odds' : ''}">
+                                        ${homeSpread > 0 ? '+' : ''}${homeSpread} (${homeOdds > 0 ? '+' : ''}${homeOdds})
+                                    </span>
+                                </td>
+                                <td>
+                                    <button class="bet-button" onclick="handleBetClick('${getBookmakerName(book.key)}')">Bet Now</button>
+                                </td>
+                            </tr>
+                        `;
+                    }).join('');
+
+                } else if (currentBetType === 'h2h') {
+                    const bestAway = findBestOdds(booksWithMarket, 'h2h', 0);
+                    const bestHome = findBestOdds(booksWithMarket, 'h2h', 1);
+
+                    tableHeaders = `
+                        <th>Sportsbook</th>
+                        <th>${game.awayTeam}</th>
+                        <th>${game.homeTeam}</th>
+                        <th></th>
+                    `;
+
+                    tableRows = booksWithMarket.map((book, idx) => {
+                        const market = book.markets.find(m => m.key === 'h2h');
+                        if (!market || !market.outcomes[0] || !market.outcomes[1]) return '';
+                        
+                        const awayOdds = market.outcomes[0].price;
+                        const homeOdds = market.outcomes[1].price;
+
+                        return `
+                            <tr>
+                                <td>
+                                    <div class="sportsbook-name">
+                                        <div class="book-logo">${getBookmakerName(book.key).substring(0, 2).toUpperCase()}</div>
+                                        ${getBookmakerName(book.key)}
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="odds-value ${idx === bestAway ? 'best-odds' : ''}">
+                                        ${awayOdds > 0 ? '+' : ''}${awayOdds}
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="odds-value ${idx === bestHome ? 'best-odds' : ''}">
+                                        ${homeOdds > 0 ? '+' : ''}${homeOdds}
+                                    </span>
+                                </td>
+                                <td>
+                                    <button class="bet-button" onclick="handleBetClick('${getBookmakerName(book.key)}')">Bet Now</button>
+                                </td>
+                            </tr>
+                        `;
+                    }).join('');
+
+                } else if (currentBetType === 'totals') {
+                    const bestOver = findBestOdds(booksWithMarket, 'totals', 0);
+                    const bestUnder = findBestOdds(booksWithMarket, 'totals', 1);
+
+                    tableHeaders = `
+                        <th>Sportsbook</th>
+                        <th>Over</th>
+                        <th>Under</th>
+                        <th></th>
+                    `;
+
+                    tableRows = booksWithMarket.map((book, idx) => {
+                        const market = book.markets.find(m => m.key === 'totals');
+                        if (!market || !market.outcomes[0] || !market.outcomes[1]) return '';
+                        
+                        const overPoint = market.outcomes[0].point;
+                        const overOdds = market.outcomes[0].price;
+                        const underPoint = market.outcomes[1].point;
+                        const underOdds = market.outcomes[1].price;
+
+                        return `
+                            <tr>
+                                <td>
+                                    <div class="sportsbook-name">
+                                        <div class="book-logo">${getBookmakerName(book.key).substring(0, 2).toUpperCase()}</div>
+                                        ${getBookmakerName(book.key)}
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="odds-value ${idx === bestOver ? 'best-odds' : ''}">
+                                        O ${overPoint} (${overOdds > 0 ? '+' : ''}${overOdds})
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="odds-value ${idx === bestUnder ? 'best-odds' : ''}">
+                                        U ${underPoint} (${underOdds > 0 ? '+' : ''}${underOdds})
+                                    </span>
+                                </td>
+                                <td>
+                                    <button class="bet-button" onclick="handleBetClick('${getBookmakerName(book.key)}')">Bet Now</button>
+                                </td>
+                            </tr>
+                        `;
+                    }).join('');
+                }
+
+                gameCard.innerHTML = `
+                    <div class="game-header">
+                        <div class="game-meta">
+                            <span class="sport-badge">${game.sport}</span>
+                            <span class="game-time">${formatGameTime(game.commence_time)}</span>
+                        </div>
+                        <div class="matchup">
+                            ${game.awayTeam} <span class="vs">@</span> ${game.homeTeam}
+                        </div>
+                    </div>
+                    <div class="odds-table-container">
+                        <table class="odds-table">
+                            <thead>
+                                <tr>${tableHeaders}</tr>
+                            </thead>
+                            <tbody>
+                                ${tableRows}
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+
+                grid.appendChild(gameCard);
+            });
+        }
+
+        // Handle bet click
+        function handleBetClick(sportsbook) {
+            // In production, replace with actual affiliate links
+            alert(`Redirecting to ${sportsbook}...\n\nIn production, this would be your affiliate link!`);
+        }
+
+        // Filter handlers
+        document.getElementById('sportFilter').addEventListener('change', function(e) {
+            currentSportFilter = e.target.value;
+            renderGames();
+        });
+
+        document.getElementById('betTypeFilter').addEventListener('change', function(e) {
+            currentBetType = e.target.value;
+            renderGames();
+        });
+
+        // Initialize - fetch odds on page load
+        fetchOdds();
+
+        // Refresh odds every 5 minutes
+        setInterval(fetchOdds, 5 * 60 * 1000);
+    </script>
+</body>
+</html>
